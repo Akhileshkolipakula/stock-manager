@@ -5,6 +5,7 @@ import psycopg2
 import pandas as pd
 import hashlib
 from datetime import date
+import os
 
 # ---------------- CONFIG ----------------
 
@@ -63,16 +64,21 @@ LOW_STOCK_LIMIT = 10
 
 # ---------------- DATABASE ----------------
 
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_PORT = os.getenv("DB_PORT")
+
 @st.cache_resource
 def get_conn():
-    return psycopg2.connect(
-        host="aws-1-ap-northeast-1.pooler.supabase.com",
-        database="postgres",
-        user="postgres.cclisgvalsmlfvdrrumv",
-        password="Ogsoda@Stock",
-        port=5432
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        port=DB_PORT
     )
-
 
 conn = get_conn()
 conn.autocommit = True
