@@ -507,28 +507,57 @@ elif page == "Flavors":
 
     if add and name.strip():
 
-        try:
+        fname = name.strip()
 
+        # Check if flavor exists (even inactive)
+        cur.execute("""
+        SELECT id, active FROM flavors WHERE name=%s
+        """, (fname,))
+
+        row = cur.fetchone()
+
+        if row:
+
+            fid, active = row
+
+            if not active:
+                # Reactivate flavor and reset stock
+                cur.execute("""
+                UPDATE flavors SET active=TRUE WHERE id=%s
+                """, (int(fid),))
+
+                cur.execute("""
+                UPDATE inventory SET stock=0 WHERE flavor_id=%s
+                """, (int(fid),))
+
+                log(f"Reactivated flavor {fname}")
+
+                st.success("Flavor reactivated with 0 stock")
+                st.rerun()
+
+            else:
+                st.error("Flavor already exists")
+
+        else:
+
+            # New flavor
             cur.execute("""
             INSERT INTO flavors(name)
             VALUES(%s)
             RETURNING id
-            """, (name.strip(),))
+            """, (fname,))
 
             fid = cur.fetchone()[0]
 
             cur.execute("""
             INSERT INTO inventory(flavor_id,stock)
             VALUES(%s,0)
-            """, (fid,))
+            """, (int(fid),))
 
-            log(f"Added flavor {name}")
+            log(f"Added flavor {fname}")
 
             st.success("Flavor added")
             st.rerun()
-
-        except:
-            st.error("Flavor already exists")
 
     st.subheader("📋 Flavor List")
 
@@ -841,12 +870,43 @@ elif page == "Customers":
 
         if cid == "New":
 
+            # Check if customer exists (even inactive)
             cur.execute("""
-            INSERT INTO customers(name,phone,shop,area)
-            VALUES(%s,%s,%s,%s)
-            """, (name, phone, shop, area))
+            SELECT id, active FROM customers WHERE name=%s
+            """, (name,))
 
-            log(f"Added customer {name}")
+            row2 = cur.fetchone()
+
+            if row2:
+
+                cid2, active2 = row2
+
+                if not active2:
+
+                    # Reactivate and update
+                    cur.execute("""
+                    UPDATE customers
+                    SET phone=%s, shop=%s, area=%s, active=TRUE
+                    WHERE id=%s
+                    """, (phone, shop, area, cid2))
+
+                    log(f"Reactivated customer {name}")
+
+                    st.success("Customer reactivated")
+                    st.rerun()
+
+                else:
+                    st.error("Customer already exists")
+
+            else:
+
+                # New customer
+                cur.execute("""
+                INSERT INTO customers(name,phone,shop,area)
+                VALUES(%s,%s,%s,%s)
+                """, (name, phone, shop, area))
+
+                log(f"Added customer {name}")
 
         else:
 
